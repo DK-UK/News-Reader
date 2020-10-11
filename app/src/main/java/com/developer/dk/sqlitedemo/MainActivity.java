@@ -1,6 +1,9 @@
 package com.developer.dk.sqlitedemo;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
 import android.os.AsyncTask;
@@ -29,24 +32,33 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
 
-    private ListView listView;
+//    private ListView listView;
+    private RecyclerView recyclerView;
     private ArrayAdapter arrayAdapter;
     private JsonPlaceHolderApi api;
     private ArrayList<Integer> articleIdList;
     public static final String TAG = "Main";
-    private ArrayList<String> articleTitleList,articleUrlList;
+    private ArrayList<NewsHolder> newsList;
+    private NewsAdapter newsAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        listView = findViewById(R.id.listView);
+//        listView = findViewById(R.id.listView);
+        recyclerView = findViewById(R.id.recyclerview);
+        recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this,RecyclerView.VERTICAL,false));
+        recyclerView.addItemDecoration(new DividerItemDecoration(MainActivity.this,DividerItemDecoration.VERTICAL));
+        recyclerView.setHasFixedSize(true);
+
+        newsList = new ArrayList<>();
+
+        newsAdapter = new NewsAdapter(MainActivity.this,newsList);
+
+        recyclerView.setAdapter(newsAdapter);
 
         try {
-
-            articleTitleList = new ArrayList<>();
-            articleUrlList = new ArrayList<>();
 
             Retrofit retrofit = new Retrofit.Builder()
                     .baseUrl("https://hacker-news.firebaseio.com/")
@@ -86,14 +98,12 @@ public class MainActivity extends AppCompatActivity {
 
                                     ArticleResponse article = response.body();
 
-                                    articleTitleList.add(article.getArticleTitle());
-                                    articleUrlList.add(article.getArticleUrl());
-
+                                    newsList.add(new NewsHolder(article.getArticleTitle(),article.getArticleUrl()));
+                                    newsAdapter.notifyDataSetChanged();
                                     Log.e(TAG, "onResponse: TITLE AND URL : "+ article.getArticleTitle() + " " + article.getArticleUrl());
 
-                                    arrayAdapter = new ArrayAdapter(MainActivity.this,android.R.layout.simple_list_item_1,articleTitleList);
-                                    listView.setAdapter(arrayAdapter);
                                 }
+
 
                                 @Override
                                 public void onFailure(Call<ArticleResponse> call, Throwable t) {
@@ -115,14 +125,6 @@ public class MainActivity extends AppCompatActivity {
 
             Log.e(TAG, "onCreate: " + articleIdList.toString());
 
-            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    Intent i = new Intent(MainActivity.this,NewsActivity.class);
-                    i.putExtra("articleUrl",articleUrlList.get(position));
-                    startActivity(i);
-                }
-            });
         }
         catch (Exception e){
             e.printStackTrace();
